@@ -166,18 +166,22 @@ function renderSetupForm(draft = setupDraftState) {
     const node = elements.liftCardTemplate.content.cloneNode(true);
     const card = node.querySelector(".lift-card");
     const liftDraft = normalizedDraft.lifts?.[index] || createEmptyLiftDraft();
+    const loadBasisLabel = blueprint === "linear" ? "Starting weight" : "Training max";
+    const incrementLabel = blueprint === "linear" ? "Successful session +lb" : "Next block +lb";
     card.dataset.liftIndex = String(index);
     card.querySelector("h3").textContent = `Lift ${index + 1}`;
     card.querySelector(".muted").textContent =
       blueprint === "531"
         ? "Use however many you need. Repeated days share one training max."
-        : "Linear progression uses the same weekly work sets for every assigned day.";
+        : "Linear uses a starting weight and only adds weight after a successful session for that lift.";
 
     const nameInput = card.querySelector('[data-field="name"]');
     const equipmentTypeInput = card.querySelector('[data-field="equipmentType"]');
     const tmInput = card.querySelector('[data-field="trainingMax"]');
     const incrementInput = card.querySelector('[data-field="increment"]');
     const accessoryList = card.querySelector("[data-accessory-list]");
+    const tmLabel = tmInput.closest(".field")?.querySelector("span");
+    const incrementLabelNode = incrementInput.closest(".field")?.querySelector("span");
 
     nameInput.name = `lift-${index}-name`;
     equipmentTypeInput.name = `lift-${index}-equipmentType`;
@@ -187,6 +191,13 @@ function renderSetupForm(draft = setupDraftState) {
     equipmentTypeInput.value = liftDraft.equipmentType || "barbell";
     tmInput.value = liftDraft.trainingMax || "";
     incrementInput.value = liftDraft.increment || "";
+    tmInput.placeholder = loadBasisLabel;
+    if (tmLabel) {
+      tmLabel.textContent = loadBasisLabel;
+    }
+    if (incrementLabelNode) {
+      incrementLabelNode.textContent = incrementLabel;
+    }
 
     accessoryList.innerHTML = "";
     (liftDraft.accessories || []).forEach((accessoryDraft, accessoryIndex) => {
@@ -1171,7 +1182,11 @@ function updateTrainingMax(liftId) {
   const input = document.querySelector(`#training-max-${liftId}`);
   const parsed = Number(input?.value);
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    window.alert("Enter a valid training max.");
+    window.alert(
+      state.activeCycle.blueprint === "linear"
+        ? "Enter a valid starting weight."
+        : "Enter a valid training max.",
+    );
     return;
   }
 
@@ -2023,6 +2038,11 @@ function renderPlanSummaryCard({ cycle, note, badges, primaryAction, dangerActio
 }
 
 function renderTrainingMaxEditor(cycle) {
+  const loadBasisLabel = cycle.blueprint === "linear" ? "Starting weight" : "Training max";
+  const loadBasisSubtitle = cycle.blueprint === "linear"
+    ? "Starting weight for linear work sets. Future sessions add the increment only after success."
+    : "Training max basis for percentage work.";
+  const actionLabel = cycle.blueprint === "linear" ? "Update Weight" : "Update TM";
   return cycle.lifts
     .map(
       (lift) => `
@@ -2030,7 +2050,7 @@ function renderTrainingMaxEditor(cycle) {
           <div class="row-head">
             <div>
               <h4>${lift.name}</h4>
-              <p class="set-subtitle">Training max basis for percentage work</p>
+              <p class="set-subtitle">${loadBasisSubtitle}</p>
             </div>
           </div>
           <div class="set-actions">
@@ -2040,7 +2060,8 @@ function renderTrainingMaxEditor(cycle) {
               min="1"
               step="1"
               value="${lift.trainingMax}"
-              placeholder="Training max"
+              placeholder="${loadBasisLabel}"
+              aria-label="${loadBasisLabel}"
             />
             <button
               class="primary-button"
@@ -2048,7 +2069,7 @@ function renderTrainingMaxEditor(cycle) {
               data-action="save-training-max"
               data-lift-id="${lift.id}"
             >
-              Update TM
+              ${actionLabel}
             </button>
           </div>
         </div>
