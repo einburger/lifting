@@ -13,10 +13,31 @@
           <p class="eyebrow">Local Browser App</p>
           <h1>Barbell Block</h1>
         </div>
-        <button id="resetAppButton" class="ghost-button" type="button">Reset</button>
+        <div class="topbar-actions">
+          <button id="homeButton" class="ghost-button" type="button">Home</button>
+          <button id="plansButton" class="ghost-button" type="button">Plans</button>
+          <button id="resetAppButton" class="ghost-button" type="button">Reset</button>
+        </div>
       </header>
 
       <main class="layout">
+        <section class="panel" id="homePanel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Start</p>
+              <h2>Choose A Mode</h2>
+            </div>
+            <p class="panel-note">Open your current block or build a new one.</p>
+          </div>
+
+          <div class="home-actions">
+            <button id="openWorkoutButton" class="primary-button" type="button">Existing Workout</button>
+            <button id="openPlansButton" class="secondary-button" type="button">Plans</button>
+            <button id="openSetupButton" class="secondary-button" type="button">Setup New Cycle</button>
+          </div>
+          <p id="homePanelNote" class="muted"></p>
+        </section>
+
         <section class="panel" id="setupPanel">
           <div class="panel-header">
             <div>
@@ -31,6 +52,34 @@
               <span>Cycle name</span>
               <input name="cycleName" type="text" placeholder="May block" required />
             </label>
+
+            <div class="inline-fields">
+              <label class="field">
+                <span>Plan blueprint</span>
+                <select name="planBlueprint">
+                  <option value="531">5/3/1</option>
+                  <option value="linear">Linear</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Lift setup</span>
+                <select name="liftCount">
+                  <option value="2">2 lifts</option>
+                  <option value="4">4 lifts</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="linearConfigFields" class="inline-fields">
+              <label class="field">
+                <span>Linear sets</span>
+                <input name="linearSets" type="number" min="1" step="1" value="5" />
+              </label>
+              <label class="field">
+                <span>Linear reps</span>
+                <input name="linearReps" type="number" min="1" step="1" value="5" />
+              </label>
+            </div>
 
             <div class="subsection">
               <div class="subsection-head">
@@ -58,7 +107,7 @@
           <div class="panel-header">
             <div>
               <p class="eyebrow">Current Training</p>
-              <h2>Today</h2>
+              <h2 id="workoutPanelTitle">Workout Detail</h2>
             </div>
             <p id="cycleStatusLabel" class="panel-note"></p>
           </div>
@@ -76,6 +125,7 @@
           <div id="calendarList" class="calendar-list empty-state">
             <p>Create a cycle to generate workouts.</p>
           </div>
+
         </section>
 
         <section class="panel" id="historyPanel">
@@ -99,6 +149,46 @@
 
           <div id="queuedCycleCard" class="card empty-state">
             <p>No queued cycle.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="plansPanel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Plan Library</p>
+              <h2>Plans</h2>
+            </div>
+            <p class="panel-note">View or delete active, queued, and archived plans.</p>
+          </div>
+
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Current</p>
+              <h2>Active Plan</h2>
+            </div>
+          </div>
+          <div id="activePlanCard" class="card empty-state">
+            <p>Create a cycle to manage the active plan.</p>
+          </div>
+
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Next</p>
+              <h2>Queued Plan</h2>
+            </div>
+          </div>
+          <div id="plansQueuedCard" class="card empty-state">
+            <p>No queued plan.</p>
+          </div>
+
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Past</p>
+              <h2>Archived Plans</h2>
+            </div>
+          </div>
+          <div id="archivedPlansList" class="history-list empty-state">
+            <p>No archived plans.</p>
           </div>
         </section>
       </main>
@@ -140,57 +230,59 @@
             <input type="number" data-field="trainingMax" min="0" step="5" />
           </label>
           <label class="field">
-            <span>Next cycle +lb</span>
+            <span>Next block +lb</span>
             <input type="number" data-field="increment" min="0" step="5" />
           </label>
         </div>
 
-        <div class="accessory-stack">
-          <div class="accessory-row" data-accessory="0">
-            <h4>Accessory 1</h4>
-            <label class="field">
-              <span>Name</span>
-              <input type="text" data-field="accessoryName" />
-            </label>
-            <div class="inline-fields triple">
-              <label class="field">
-                <span>Sets</span>
-                <input type="number" data-field="accessorySets" min="1" step="1" />
-              </label>
-              <label class="field">
-                <span>Reps</span>
-                <input type="number" data-field="accessoryReps" min="1" step="1" />
-              </label>
-              <label class="field">
-                <span>Weight</span>
-                <input type="text" data-field="accessoryWeight" placeholder="Optional" />
-              </label>
-            </div>
-          </div>
-
-          <div class="accessory-row" data-accessory="1">
-            <h4>Accessory 2</h4>
-            <label class="field">
-              <span>Name</span>
-              <input type="text" data-field="accessoryName" />
-            </label>
-            <div class="inline-fields triple">
-              <label class="field">
-                <span>Sets</span>
-                <input type="number" data-field="accessorySets" min="1" step="1" />
-              </label>
-              <label class="field">
-                <span>Reps</span>
-                <input type="number" data-field="accessoryReps" min="1" step="1" />
-              </label>
-              <label class="field">
-                <span>Weight</span>
-                <input type="text" data-field="accessoryWeight" placeholder="Optional" />
-              </label>
-            </div>
-          </div>
-        </div>
+        <div class="accessory-stack" data-accessory-list></div>
+        <button class="secondary-button" type="button" data-action="add-accessory">Add Accessory</button>
       </article>
+    </template>
+
+    <template id="accessoryRowTemplate">
+      <div class="accessory-row">
+        <div class="row-head">
+          <h4>Accessory</h4>
+          <button class="ghost-button" type="button" data-action="remove-accessory">Remove</button>
+        </div>
+        <label class="field">
+          <span>Name</span>
+          <input type="text" data-field="accessoryName" />
+        </label>
+        <label class="field">
+          <span>Progression</span>
+          <select data-field="accessoryProgressionType">
+            <option value="fixed">Fixed</option>
+            <option value="double-reps">Double progression (reps)</option>
+            <option value="double-sets">Double progression (sets)</option>
+          </select>
+        </label>
+        <div class="inline-fields triple">
+          <label class="field">
+            <span>Sets</span>
+            <input type="number" data-field="accessorySets" min="1" step="1" />
+          </label>
+          <label class="field">
+            <span>Target reps</span>
+            <input type="number" data-field="accessoryReps" min="1" step="1" />
+          </label>
+          <label class="field">
+            <span>Weight</span>
+            <input type="text" data-field="accessoryWeight" placeholder="Optional" />
+          </label>
+        </div>
+        <div class="inline-fields triple">
+          <label class="field" data-accessory-increment-field>
+            <span>+lb step</span>
+            <input type="number" data-field="accessoryIncrement" min="1" step="1" />
+          </label>
+          <label class="field" data-accessory-threshold-field>
+            <span>Rep overage</span>
+            <input type="number" data-field="accessoryAmrapThreshold" min="1" step="1" />
+          </label>
+        </div>
+      </div>
     </template>
 
     <script src="./app.js"></script>
