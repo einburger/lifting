@@ -29,12 +29,6 @@ const SECONDARY_SCHEME = {
   default: { sets: 4, reps: 10, percent: 0.6 },
   deload: { sets: 3, reps: 10, percent: 0.5 },
 };
-const LINEAR_PERCENT_SCHEME = {
-  1: { percent: 0.65 },
-  2: { percent: 0.7 },
-  3: { percent: 0.75 },
-  4: { percent: 0.8 },
-};
 const elements = {
   homePanel: document.querySelector("#homePanel"),
   homePanelNote: document.querySelector("#homePanelNote"),
@@ -576,14 +570,12 @@ function buildWeekDates(startDateIso, weekNumber) {
 
 function buildMainSets(trainingMax, weekNumber, workoutType, blueprint, linearConfig) {
   if (blueprint === "linear") {
-    const scheme = LINEAR_PERCENT_SCHEME[weekNumber] || LINEAR_PERCENT_SCHEME[1];
     const sets = normalizePositiveInteger(linearConfig?.sets, 5);
     const reps = normalizePositiveInteger(linearConfig?.reps, 5);
-    const targetWeight = roundToNearestFive(trainingMax * scheme.percent);
     return Array.from({ length: sets }, (_, index) => ({
       index,
       label: `${sets} x ${reps}`,
-      targetWeight,
+      targetWeight: roundToNearestFive(trainingMax),
       targetReps: reps,
       amrap: false,
       loggedReps: null,
