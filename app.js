@@ -29,13 +29,6 @@ const SECONDARY_SCHEME = {
   default: { sets: 4, reps: 10, percent: 0.6 },
   deload: { sets: 3, reps: 10, percent: 0.5 },
 };
-const LINEAR_PERCENT_SCHEME = {
-  1: { sets: 5, reps: 5, percent: 0.65 },
-  2: { sets: 5, reps: 5, percent: 0.7 },
-  3: { sets: 5, reps: 5, percent: 0.75 },
-  4: { sets: 5, reps: 5, percent: 0.8 },
-};
-
 const elements = {
   homePanel: document.querySelector("#homePanel"),
   homePanelNote: document.querySelector("#homePanelNote"),
@@ -494,6 +487,12 @@ function buildCycleFromDraft(draft) {
 
 function generateWorkouts(cycle) {
   const workouts = [];
+  const existingByKey = new Map(
+    (cycle.workouts || []).map((workout) => [getWorkoutIdentityKey(workout), workout]),
+  );
+  const linearWeightByLiftId = new Map(
+    (cycle.lifts || []).map((lift) => [lift.id, lift.trainingMax]),
+  );
 
   for (let weekNumber = 1; weekNumber <= 4; weekNumber += 1) {
     const weeklyDates = buildWeekDates(cycle.startDate, weekNumber);
@@ -506,6 +505,13 @@ function generateWorkouts(cycle) {
       const lift = cycle.lifts.find((entry) => entry.id === assignment.liftId);
       const workoutType = cycle.blueprint === "linear" ? "linear" : count === 1 ? "primary" : "secondary";
       const date = weeklyDates[assignment.weekday];
+      const workoutKey = getWorkoutIdentityKey({
+        weekNumber,
+        dayIndex,
+        liftId: assignment.liftId,
+      });
+      const existingWorkout = existingByKey.get(workoutKey);
+      const linearWeight = linearWeightByLiftId.get(assignment.liftId) || lift.trainingMax;
 
       workouts.push({
         id: `workout-${crypto.randomUUID()}`,
@@ -520,7 +526,7 @@ function generateWorkouts(cycle) {
         type: workoutType,
         blueprint: cycle.blueprint,
         mainSets: buildMainSets(
-          lift.trainingMax,
+          cycle.blueprint === "linear" ? linearWeight : lift.trainingMax,
           weekNumber,
           workoutType,
           cycle.blueprint,
@@ -529,6 +535,10 @@ function generateWorkouts(cycle) {
         accessorySets: buildAccessorySets(lift.accessories),
         status: "pending",
       });
+
+      if (cycle.blueprint === "linear" && existingWorkout?.status === "completed" && didHitMainTargets(existingWorkout)) {
+        linearWeightByLiftId.set(assignment.liftId, linearWeight + lift.increment);
+      }
     });
   }
 
@@ -549,14 +559,12 @@ function buildWeekDates(startDateIso, weekNumber) {
 
 function buildMainSets(trainingMax, weekNumber, workoutType, blueprint, linearConfig) {
   if (blueprint === "linear") {
-    const scheme = LINEAR_PERCENT_SCHEME[weekNumber];
     const sets = normalizePositiveInteger(linearConfig?.sets, 5);
     const reps = normalizePositiveInteger(linearConfig?.reps, 5);
-    const targetWeight = roundToNearestFive(trainingMax * scheme.percent);
     return Array.from({ length: sets }, (_, index) => ({
       index,
       label: `${sets} x ${reps}`,
-      targetWeight,
+      targetWeight: roundToNearestFive(trainingMax),
       targetReps: reps,
       amrap: false,
       loggedReps: null,
@@ -617,7 +625,10 @@ function buildQueuedCycle(activeCycle) {
     lifts: activeCycle.lifts.map((lift) => ({
       ...lift,
       id: `lift-${crypto.randomUUID()}`,
-      trainingMax: lift.trainingMax + lift.increment,
+      trainingMax:
+        activeCycle.blueprint === "linear"
+          ? getNextLinearTrainingMax(activeCycle, lift)
+          : lift.trainingMax + lift.increment,
       accessories: lift.accessories.map((accessory) => computeNextAccessoryConfig(activeCycle, lift, accessory)),
     })),
     dayAssignments: [],
@@ -1129,6 +1140,9 @@ function updateWorkoutSet(workoutId, indexA, indexB, target) {
   }
 
   syncWorkoutStatus(workout);
+  if (state.activeCycle.blueprint === "linear") {
+    state.activeCycle.workouts = regeneratePendingWorkouts(state.activeCycle);
+  }
   if (state.queuedCycle) {
     state.queuedCycle = buildQueuedCycle(state.activeCycle);
   }
@@ -1180,6 +1194,22 @@ function syncWorkoutStatus(workout) {
   }
 }
 
+function didHitMainTargets(workout) {
+  return (workout.mainSets || []).length > 0 &&
+    workout.mainSets.every((set) => Number.isFinite(set.loggedReps) && set.loggedReps >= set.targetReps);
+}
+
+function getNextLinearTrainingMax(activeCycle, lift) {
+  return activeCycle.workouts
+    .filter((workout) => workout.liftId === lift.id)
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .reduce((weight, workout) => (
+      workout.status === "completed" && didHitMainTargets(workout)
+        ? weight + lift.increment
+        : weight
+    ), lift.trainingMax);
+}
+
 function markWorkoutStatus(workoutId, status) {
   if (!state.activeCycle) {
     return;
@@ -1191,6 +1221,9 @@ function markWorkoutStatus(workoutId, status) {
   }
 
   workout.status = status;
+  if (state.activeCycle.blueprint === "linear") {
+    state.activeCycle.workouts = regeneratePendingWorkouts(state.activeCycle);
+  }
   if (state.queuedCycle) {
     state.queuedCycle = buildQueuedCycle(state.activeCycle);
   }
