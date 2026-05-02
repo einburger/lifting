@@ -152,9 +152,14 @@ h4 {
 .accessory-stack,
 .calendar-list,
 .history-list,
+.plan-summary-body,
 .dialog-body {
   display: grid;
   gap: 1rem;
+}
+
+.plan-summary-body {
+  color: var(--muted);
 }
 
 .subsection-head {

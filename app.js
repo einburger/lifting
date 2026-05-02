@@ -1,4 +1,5 @@
 const STORAGE_KEY = "barbell-block-state-v1";
+const SETUP_DRAFT_KEY = "barbell-block-setup-draft-v1";
 const WEEKDAY_ORDER = ["Mon", "Tue", "Thu", "Fri"];
 const PLATES = [45, 25, 10, 5, 2.5];
 const BAR_WEIGHT = 45;
@@ -71,6 +72,7 @@ const elements = {
 };
 
 let state = loadState();
+let setupDraftState = loadSetupDraft();
 let currentView = "home";
 let selectedWorkoutId = null;
 let collapsedWeeks = new Set();
@@ -79,7 +81,7 @@ let collapsedWorkoutSections = new Set();
 init();
 
 function init() {
-  renderSetupForm();
+  renderSetupForm(setupDraftState);
   attachEvents();
   renderApp();
 }
@@ -99,7 +101,35 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error("Failed to save state", error);
+  }
+}
+
+function loadSetupDraft() {
+  try {
+    const raw = localStorage.getItem(SETUP_DRAFT_KEY);
+    if (!raw) {
+      return createEmptySetupDraft();
+    }
+
+    return normalizeSetupDraft(JSON.parse(raw));
+  } catch (error) {
+    console.error("Failed to load setup draft", error);
+    return createEmptySetupDraft();
+  }
+}
+
+function saveSetupDraft(draft = readSetupDraft()) {
+  setupDraftState = normalizeSetupDraft(draft);
+
+  try {
+    localStorage.setItem(SETUP_DRAFT_KEY, JSON.stringify(setupDraftState));
+  } catch (error) {
+    console.error("Failed to save setup draft", error);
+  }
 }
 
 function attachEvents() {
@@ -116,14 +146,16 @@ function attachEvents() {
   document.addEventListener("click", handleActionClick);
 }
 
-function renderSetupForm(draft = readSetupDraft()) {
-  const blueprint = normalizeBlueprint(draft.blueprint);
-  const liftCount = normalizeLiftCount(draft.liftCount);
-  const linearSets = normalizePositiveInteger(draft.linearSets, 5);
-  const linearReps = normalizePositiveInteger(draft.linearReps, 5);
+function renderSetupForm(draft = setupDraftState) {
+  const normalizedDraft = normalizeSetupDraft(draft);
+  setupDraftState = normalizedDraft;
+  const blueprint = normalizeBlueprint(normalizedDraft.blueprint);
+  const liftCount = normalizeLiftCount(normalizedDraft.liftCount);
+  const linearSets = normalizePositiveInteger(normalizedDraft.linearSets, 5);
+  const linearReps = normalizePositiveInteger(normalizedDraft.linearReps, 5);
 
   elements.startDateLabel.textContent = `Starts ${formatDate(getNextMonday(new Date()))}`;
-  elements.cycleForm.elements.cycleName.value = draft.cycleName || "";
+  elements.cycleForm.elements.cycleName.value = normalizedDraft.cycleName || "";
   elements.cycleForm.elements.planBlueprint.value = blueprint;
   elements.cycleForm.elements.liftCount.value = String(liftCount);
   elements.cycleForm.elements.linearSets.value = String(linearSets);
@@ -134,7 +166,7 @@ function renderSetupForm(draft = readSetupDraft()) {
   for (let index = 0; index < liftCount; index += 1) {
     const node = elements.liftCardTemplate.content.cloneNode(true);
     const card = node.querySelector(".lift-card");
-    const liftDraft = draft.lifts?.[index] || createEmptyLiftDraft();
+    const liftDraft = normalizedDraft.lifts?.[index] || createEmptyLiftDraft();
     card.dataset.liftIndex = String(index);
     card.querySelector("h3").textContent = `Lift ${index + 1}`;
     card.querySelector(".muted").textContent =
@@ -171,7 +203,7 @@ function renderSetupForm(draft = readSetupDraft()) {
     const wrapper = document.createElement("label");
     wrapper.className = "field";
     const options = Array.from({ length: liftCount }, (_, index) => {
-      const selected = String(draft.assignments?.[weekday] ?? "") === String(index) ? "selected" : "";
+      const selected = String(normalizedDraft.assignments?.[weekday] ?? "") === String(index) ? "selected" : "";
       return `<option value="${index}" ${selected}>Lift ${index + 1}</option>`;
     }).join("");
     wrapper.innerHTML = `
@@ -208,9 +240,11 @@ function handleCreateCycle(event) {
 
   state.activeCycle = cycle;
   state.queuedCycle = buildQueuedCycle(cycle);
+  setupDraftState = createEmptySetupDraft();
   selectedWorkoutId = state.activeCycle.workouts[0]?.id || null;
   currentView = "workout";
   saveState();
+  saveSetupDraft(setupDraftState);
   renderApp();
 }
 
@@ -221,17 +255,20 @@ function handleResetApp() {
   }
 
   state = createEmptyState();
+  setupDraftState = createEmptySetupDraft();
   currentView = "home";
   selectedWorkoutId = null;
   saveState();
+  saveSetupDraft(setupDraftState);
   elements.cycleForm.reset();
-  renderSetupForm(createEmptySetupDraft());
+  renderSetupForm(setupDraftState);
   renderApp();
 }
 
 function handleSetupFormChange(event) {
   if (event.target.dataset.field === "accessoryProgressionType") {
     updateAccessoryRowVisibility(event.target.closest(".accessory-row"));
+    saveSetupDraft();
     return;
   }
 
@@ -241,10 +278,13 @@ function handleSetupFormChange(event) {
     event.target.name !== "linearSets" &&
     event.target.name !== "linearReps"
   ) {
+    saveSetupDraft();
     return;
   }
 
-  renderSetupForm(readSetupDraft());
+  const nextDraft = readSetupDraft();
+  saveSetupDraft(nextDraft);
+  renderSetupForm(nextDraft);
 }
 
 function handleActionClick(event) {
@@ -273,6 +313,10 @@ function handleActionClick(event) {
 
   if (action === "delete-active-cycle") {
     deleteActiveCycle();
+  }
+
+  if (action === "save-training-max") {
+    updateTrainingMax(actionTarget.dataset.liftId);
   }
 
   if (action === "delete-queued-cycle") {
@@ -592,6 +636,33 @@ function buildQueuedCycle(activeCycle) {
   queuedCycle.workouts = generateWorkouts(queuedCycle);
 
   return queuedCycle;
+}
+
+function regeneratePendingWorkouts(cycle) {
+  const regenerated = generateWorkouts(cycle);
+  const existingByKey = new Map(
+    cycle.workouts.map((workout) => [getWorkoutIdentityKey(workout), workout]),
+  );
+
+  return regenerated.map((workout) => {
+    const existing = existingByKey.get(getWorkoutIdentityKey(workout));
+    if (!existing) {
+      return workout;
+    }
+
+    if (existing.status === "pending") {
+      return {
+        ...workout,
+        id: existing.id,
+      };
+    }
+
+    return existing;
+  });
+}
+
+function getWorkoutIdentityKey(workout) {
+  return `${workout.weekNumber}-${workout.dayIndex}-${workout.liftId}`;
 }
 
 function renderTodayCard() {
@@ -943,10 +1014,6 @@ function renderActivePlanCard() {
 
   const completedCount = state.activeCycle.workouts.filter((workout) => workout.status === "completed").length;
   const workoutCount = state.activeCycle.workouts.length;
-  const liftSummary = state.activeCycle.lifts
-    .map((lift) => `${lift.name} ${lift.trainingMax} lb`)
-    .join(" • ");
-
   elements.activePlanCard.className = "card";
   elements.activePlanCard.innerHTML = renderPlanSummaryCard({
     cycle: state.activeCycle,
@@ -958,7 +1025,7 @@ function renderActivePlanCard() {
     ],
     primaryAction: `<button class="secondary-button" type="button" data-action="view-plan-workouts" data-cycle-type="active">Open Workouts</button>`,
     dangerAction: `<button class="danger-button" type="button" data-action="delete-active-cycle">Delete Active Plan</button>`,
-    liftSummary,
+    liftSummary: renderTrainingMaxEditor(state.activeCycle),
   });
 }
 
@@ -1062,6 +1129,32 @@ function updateWorkoutSet(workoutId, indexA, indexB, target) {
   }
 
   syncWorkoutStatus(workout);
+  if (state.queuedCycle) {
+    state.queuedCycle = buildQueuedCycle(state.activeCycle);
+  }
+  saveState();
+  renderApp();
+}
+
+function updateTrainingMax(liftId) {
+  if (!state.activeCycle) {
+    return;
+  }
+
+  const lift = state.activeCycle.lifts.find((entry) => entry.id === liftId);
+  if (!lift) {
+    return;
+  }
+
+  const input = document.querySelector(`#training-max-${liftId}`);
+  const parsed = Number(input?.value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    window.alert("Enter a valid training max.");
+    return;
+  }
+
+  lift.trainingMax = parsed;
+  state.activeCycle.workouts = regeneratePendingWorkouts(state.activeCycle);
   if (state.queuedCycle) {
     state.queuedCycle = buildQueuedCycle(state.activeCycle);
   }
@@ -1468,6 +1561,7 @@ function addAccessoryRow(liftCard) {
   const liftIndex = Number(liftCard.dataset.liftIndex);
   const list = liftCard.querySelector("[data-accessory-list]");
   list.appendChild(createAccessoryRow(liftIndex));
+  saveSetupDraft();
 }
 
 function removeAccessoryRow(accessoryRow) {
@@ -1479,6 +1573,7 @@ function removeAccessoryRow(accessoryRow) {
   const liftCard = accessoryRow.closest(".lift-card");
   accessoryRow.remove();
   renumberAccessoryRows(liftCard, list);
+  saveSetupDraft();
 }
 
 function renumberAccessoryRows(liftCard, list) {
@@ -1574,11 +1669,47 @@ function createEmptyState() {
 
 function normalizeState(rawState) {
   return {
-    activeCycle: normalizeCycle(rawState.activeCycle),
-    queuedCycle: normalizeCycle(rawState.queuedCycle),
-    archivedCycles: Array.isArray(rawState.archivedCycles)
+    activeCycle: normalizeCycle(rawState?.activeCycle),
+    queuedCycle: normalizeCycle(rawState?.queuedCycle),
+    archivedCycles: Array.isArray(rawState?.archivedCycles)
       ? rawState.archivedCycles.map((cycle) => normalizeCycle(cycle)).filter(Boolean)
       : [],
+  };
+}
+
+function normalizeSetupDraft(draft) {
+  const normalized = draft || {};
+  const liftCount = normalizeLiftCount(normalized.liftCount);
+
+  return {
+    cycleName: String(normalized.cycleName || ""),
+    blueprint: normalizeBlueprint(normalized.blueprint),
+    liftCount,
+    linearSets: normalizePositiveInteger(normalized.linearSets, 5),
+    linearReps: normalizePositiveInteger(normalized.linearReps, 5),
+    lifts: Array.from({ length: 4 }, (_, index) => {
+      const lift = normalized.lifts?.[index] || createEmptyLiftDraft();
+      return {
+        name: String(lift.name || ""),
+        equipmentType: lift.equipmentType || "barbell",
+        trainingMax: lift.trainingMax || "",
+        increment: lift.increment || "",
+        accessories: Array.isArray(lift.accessories)
+          ? lift.accessories.map((accessory) => ({
+            name: String(accessory.name || ""),
+            progressionType: normalizeAccessoryProgressionType(accessory.progressionType),
+            sets: accessory.sets || "",
+            reps: accessory.reps || "",
+            weight: accessory.weight || "",
+            increment: accessory.increment || "5",
+            amrapThreshold: accessory.amrapThreshold || "2",
+          }))
+          : [],
+      };
+    }),
+    assignments: Object.fromEntries(
+      WEEKDAY_ORDER.map((weekday) => [weekday, String(normalized.assignments?.[weekday] ?? "")]),
+    ),
   };
 }
 
@@ -1838,7 +1969,7 @@ function renderPlanSummaryCard({ cycle, note, badges, primaryAction, dangerActio
         <h3>${cycle.name}</h3>
         <p class="queued-meta">${note}</p>
       </div>
-      <p class="muted">${liftSummary}</p>
+      <div class="plan-summary-body">${liftSummary}</div>
       <div class="badge-row">
         ${badges.map((badge) => `<span class="badge">${badge}</span>`).join("")}
       </div>
@@ -1848,6 +1979,41 @@ function renderPlanSummaryCard({ cycle, note, badges, primaryAction, dangerActio
       </div>
     </div>
   `;
+}
+
+function renderTrainingMaxEditor(cycle) {
+  return cycle.lifts
+    .map(
+      (lift) => `
+        <div class="accessory-row">
+          <div class="row-head">
+            <div>
+              <h4>${lift.name}</h4>
+              <p class="set-subtitle">Training max basis for percentage work</p>
+            </div>
+          </div>
+          <div class="set-actions">
+            <input
+              id="training-max-${lift.id}"
+              type="number"
+              min="1"
+              step="1"
+              value="${lift.trainingMax}"
+              placeholder="Training max"
+            />
+            <button
+              class="primary-button"
+              type="button"
+              data-action="save-training-max"
+              data-lift-id="${lift.id}"
+            >
+              Update TM
+            </button>
+          </div>
+        </div>
+      `,
+    )
+    .join("");
 }
 
 function describeMainSetPreview(workout) {
