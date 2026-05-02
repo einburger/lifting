@@ -1,0 +1,388 @@
+:root {
+  color-scheme: dark;
+  --bg: #131515;
+  --panel: #1d2121;
+  --panel-2: #252a2a;
+  --panel-3: #303737;
+  --text: #f3f1e7;
+  --muted: #b0b7b2;
+  --line: #424848;
+  --accent: #d2ff72;
+  --accent-strong: #b8ef3e;
+  --danger: #ff8f7a;
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(210, 255, 114, 0.1), transparent 30%),
+    linear-gradient(180deg, #161919 0%, #101212 100%);
+  color: var(--text);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.topbar,
+.panel-header,
+.dialog-head,
+.inline-fields,
+.lift-card-head,
+.calendar-meta,
+.row-head,
+.workout-actions,
+.queued-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.topbar {
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.9rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+h4 {
+  font-size: 0.88rem;
+}
+
+.layout {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel,
+.card,
+.lift-card,
+.calendar-row,
+.history-group,
+.set-row,
+.accessory-block,
+.plate-dialog,
+.queued-cycle {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 100%), var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  padding: 1rem;
+}
+
+.panel-header {
+  margin-bottom: 1rem;
+}
+
+.panel-header.compact {
+  margin-top: 1rem;
+}
+
+.panel-note,
+.muted,
+.calendar-meta,
+.history-meta,
+.queued-meta,
+.set-subtitle {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.stack,
+.subsection,
+.accessory-stack,
+.calendar-list,
+.history-list,
+.dialog-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.subsection-head {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.subsection-head p {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+input,
+select {
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 0.8rem 0.9rem;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid rgba(210, 255, 114, 0.35);
+  border-color: var(--accent);
+}
+
+.primary-button,
+.ghost-button,
+.secondary-button,
+.danger-button,
+.set-row button {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 0.75rem 0.95rem;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: var(--accent);
+  color: #121612;
+  font-weight: 700;
+}
+
+.secondary-button {
+  background: var(--panel-3);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.ghost-button {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.danger-button {
+  background: rgba(255, 143, 122, 0.12);
+  color: var(--danger);
+  border-color: rgba(255, 143, 122, 0.35);
+}
+
+.card,
+.queued-cycle {
+  padding: 1rem;
+}
+
+.empty-state {
+  color: var(--muted);
+}
+
+.lift-grid,
+.assignment-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.lift-card {
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.inline-fields {
+  flex-wrap: wrap;
+}
+
+.inline-fields > .field {
+  flex: 1 1 140px;
+}
+
+.inline-fields.triple > .field {
+  flex-basis: 110px;
+}
+
+.accessory-row {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.assignment-grid .field {
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.today-workout {
+  display: grid;
+  gap: 1rem;
+}
+
+.today-header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.badge-row,
+.set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.set-list,
+.accessory-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.set-row,
+.accessory-block {
+  padding: 0.8rem;
+}
+
+.set-row {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.row-head {
+  align-items: start;
+}
+
+.set-row input {
+  max-width: 110px;
+}
+
+.calendar-list,
+.history-list {
+  margin-top: 0.6rem;
+}
+
+.calendar-row,
+.history-group {
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.calendar-row.today {
+  border-color: var(--accent);
+}
+
+.calendar-row.completed {
+  background: linear-gradient(180deg, rgba(210, 255, 114, 0.08), transparent 100%), var(--panel);
+}
+
+.calendar-row.missed {
+  background: linear-gradient(180deg, rgba(255, 143, 122, 0.08), transparent 100%), var(--panel);
+}
+
+.history-entry {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.history-entry:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.queued-cycle {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.plate-dialog {
+  width: min(420px, calc(100vw - 2rem));
+  padding: 1rem;
+  color: var(--text);
+}
+
+.plate-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.dialog-body {
+  margin-top: 1rem;
+}
+
+.plate-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+
+@media (min-width: 980px) {
+  .layout {
+    grid-template-columns: 1.1fr 1fr 0.9fr;
+    align-items: start;
+  }
+}

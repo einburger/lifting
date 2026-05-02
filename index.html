@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Barbell Block</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Local Browser App</p>
+          <h1>Barbell Block</h1>
+        </div>
+        <button id="resetAppButton" class="ghost-button" type="button">Reset</button>
+      </header>
+
+      <main class="layout">
+        <section class="panel" id="setupPanel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">New Cycle</p>
+              <h2>Setup</h2>
+            </div>
+            <p id="startDateLabel" class="panel-note"></p>
+          </div>
+
+          <form id="cycleForm" class="stack">
+            <label class="field">
+              <span>Cycle name</span>
+              <input name="cycleName" type="text" placeholder="May block" required />
+            </label>
+
+            <div class="subsection">
+              <div class="subsection-head">
+                <h3>Lifts</h3>
+                <p>Free-form names, one training max per lift, two accessories per lift.</p>
+              </div>
+
+              <div id="liftCards" class="lift-grid"></div>
+            </div>
+
+            <div class="subsection">
+              <div class="subsection-head">
+                <h3>Weekly Split</h3>
+                <p>Pick the lift for each `Mon/Tue/Thu/Fri` session.</p>
+              </div>
+
+              <div id="dayAssignments" class="assignment-grid"></div>
+            </div>
+
+            <button class="primary-button" type="submit">Create Cycle</button>
+          </form>
+        </section>
+
+        <section class="panel" id="dashboardPanel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Current Training</p>
+              <h2>Today</h2>
+            </div>
+            <p id="cycleStatusLabel" class="panel-note"></p>
+          </div>
+
+          <div id="todayCard" class="card empty-state">
+            <p>No active cycle.</p>
+          </div>
+
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Schedule</p>
+              <h2>Calendar</h2>
+            </div>
+          </div>
+          <div id="calendarList" class="calendar-list empty-state">
+            <p>Create a cycle to generate workouts.</p>
+          </div>
+        </section>
+
+        <section class="panel" id="historyPanel">
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Archived Work</p>
+              <h2>History By Lift</h2>
+            </div>
+          </div>
+
+          <div id="historyList" class="history-list empty-state">
+            <p>No logged lifts yet.</p>
+          </div>
+
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Next Block</p>
+              <h2>Queued Cycle</h2>
+            </div>
+          </div>
+
+          <div id="queuedCycleCard" class="card empty-state">
+            <p>No queued cycle.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="plateDialog" class="plate-dialog">
+      <div class="dialog-head">
+        <div>
+          <p class="eyebrow">Plate Math</p>
+          <h2 id="plateDialogTitle">Set</h2>
+        </div>
+        <button id="closePlateDialogButton" class="ghost-button" type="button">Close</button>
+      </div>
+      <div id="plateDialogBody" class="dialog-body"></div>
+    </dialog>
+
+    <template id="liftCardTemplate">
+      <article class="lift-card">
+        <div class="lift-card-head">
+          <h3></h3>
+          <p class="muted"></p>
+        </div>
+
+        <label class="field">
+          <span>Lift name</span>
+          <input type="text" data-field="name" />
+        </label>
+
+        <div class="inline-fields">
+          <label class="field">
+            <span>Lift type</span>
+            <select data-field="equipmentType">
+              <option value="barbell">Barbell</option>
+              <option value="non-barbell">Non-barbell</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Training max</span>
+            <input type="number" data-field="trainingMax" min="0" step="5" />
+          </label>
+          <label class="field">
+            <span>Next cycle +lb</span>
+            <input type="number" data-field="increment" min="0" step="5" />
+          </label>
+        </div>
+
+        <div class="accessory-stack">
+          <div class="accessory-row" data-accessory="0">
+            <h4>Accessory 1</h4>
+            <label class="field">
+              <span>Name</span>
+              <input type="text" data-field="accessoryName" />
+            </label>
+            <div class="inline-fields triple">
+              <label class="field">
+                <span>Sets</span>
+                <input type="number" data-field="accessorySets" min="1" step="1" />
+              </label>
+              <label class="field">
+                <span>Reps</span>
+                <input type="number" data-field="accessoryReps" min="1" step="1" />
+              </label>
+              <label class="field">
+                <span>Weight</span>
+                <input type="text" data-field="accessoryWeight" placeholder="Optional" />
+              </label>
+            </div>
+          </div>
+
+          <div class="accessory-row" data-accessory="1">
+            <h4>Accessory 2</h4>
+            <label class="field">
+              <span>Name</span>
+              <input type="text" data-field="accessoryName" />
+            </label>
+            <div class="inline-fields triple">
+              <label class="field">
+                <span>Sets</span>
+                <input type="number" data-field="accessorySets" min="1" step="1" />
+              </label>
+              <label class="field">
+                <span>Reps</span>
+                <input type="number" data-field="accessoryReps" min="1" step="1" />
+              </label>
+              <label class="field">
+                <span>Weight</span>
+                <input type="text" data-field="accessoryWeight" placeholder="Optional" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
